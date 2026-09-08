@@ -146,19 +146,47 @@ class FFmpegService:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             logger.info(f"Vidéo assemblée avec succès : {output_path} ({output_path.stat().st_size} octets)")
         except subprocess.CalledProcessError as e:
-            logger.error(f"Erreur lors de l'assemblage FFmpeg : {e.stderr}")
-            # Si le filtre subtitles a échoué (ex. libass manquant), réessayer sans sous-titres
-            if burn_subtitles and "subtitles" in filter_complex:
-                logger.warning("Nouvel essai FFmpeg sans filtre subtitles...")
-                return self.assemble_video(
-                    audio_path=audio_path,
-                    visual_path=visual_path,
-                    subtitles_path=None,
-                    output_filename=output_filename,
-                    output_dir=output_dir,
-                    burn_subtitles=False,
-                )
-            raise
+            logger.warning(f"Assemblage avec filtre subtitles impossible ({e.stderr.strip().splitlines()[-1] if e.stderr else 'erreur'}).")
+            # Fallback 1: Intégrer les sous-titres comme piste textuelle mov_text dans le MP4
+            if subtitles_path and subtitles_path.exists():
+                logger.info("Tentative d'intégration des sous-titres en piste 'mov_text'...")
+                cmd_soft = [
+                    "ffmpeg", "-y",
+                    "-stream_loop", "-1",
+                    "-i", str(input_video),
+                    "-i", str(audio_path),
+                    "-i", str(subtitles_path),
+                    "-vf", scale_pad_filter,
+                    "-map", "0:v",
+                    "-map", "1:a",
+                    "-map", "2:s",
+                    "-c:v", "libx264",
+                    "-preset", "fast",
+                    "-crf", "22",
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+                    "-c:s", "mov_text",
+                    "-t", f"{audio_duration:.3f}",
+                    "-pix_fmt", "yuv420p",
+                    str(output_path),
+                ]
+                try:
+                    subprocess.run(cmd_soft, check=True, capture_output=True, text=True)
+                    logger.info(f"Vidéo assemblée avec sous-titres mov_text : {output_path}")
+                    return output_path
+                except subprocess.CalledProcessError:
+                    pass
+
+            # Fallback 2: Assemblage propre sans sous-titres
+            logger.info("Assemblage final vidéo + audio sans sous-titres...")
+            return self.assemble_video(
+                audio_path=audio_path,
+                visual_path=visual_path,
+                subtitles_path=None,
+                output_filename=output_filename,
+                output_dir=output_dir,
+                burn_subtitles=False,
+            )
         finally:
             if temp_bg and temp_bg.exists():
                 temp_bg.unlink(missing_ok=True)
