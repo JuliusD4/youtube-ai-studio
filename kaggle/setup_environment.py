@@ -60,6 +60,12 @@ def setup_kaggle_environment():
                 "Installation depuis le dépôt GitHub de Resemble AI",
             )
 
+    # 5. Préparation de MuseTalk
+    musetalk_dir = "/kaggle/working/MuseTalk"
+    if not os.path.exists(musetalk_dir):
+        print("Clonage de MuseTalk pour l'animation d'avatar...")
+        run_command(f"git clone --depth 1 https://github.com/TMElyralab/MuseTalk.git {musetalk_dir}", "Clonage de MuseTalk")
+
     print("\n" + "=" * 60)
     print("🎉 ENVIRONNEMENT PRÊT POUR L'EXÉCUTION !")
     print("=" * 60)
