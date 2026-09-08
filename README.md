@@ -66,7 +66,7 @@ Le script déploie le notebook, suit l'avancement en temps réel, et télécharg
 ## 📁 Structure du Projet
 
 ```text
-video-ia-youtube/
+youtube-ai-studio/
 ├── README.md                     # Documentation utilisateur
 ├── requirements.txt              # Dépendances Python
 ├── .gitignore                    # Protection absolue des secrets et données
