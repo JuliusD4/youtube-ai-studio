@@ -1,0 +1,17 @@
+# Dépendances principales pour AI YouTube Studio
+# Kaggle GPU Python 3.10 / 3.11
+
+# API & Utilitaires
+requests>=2.31.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+numpy>=1.24.0
+
+# Whisper (Transcription & Horodatage)
+openai-whisper>=20231117
+
+# Chatterbox V3 TTS (Resemble AI)
+chatterbox-tts>=0.1.0
+
+# Kaggle API (utilitaire pour déclencher et surveiller l'exécution cloud)
+kaggle>=2.0.0

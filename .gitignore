@@ -1,0 +1,59 @@
+# Environments & Python
+.venv/
+env/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Secrets & Credentials (NEVER COMMIT)
+.env
+*.env
+*.env.local
+.kaggle/
+access_token
+kaggle.json
+credentials.json
+secrets.json
+*.pem
+*.key
+
+# Model weights & large AI checkpoints
+models/
+checkpoints/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+weights/
+
+# Media & Generated Outputs
+outputs/
+*.mp4
+*.wav
+*.mp3
+*.m4a
+*.srt
+*.vtt
+*.avi
+*.mkv
+*.webm
+
+# OS & IDE
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Kaggle / temporary files
+.ipynb_checkpoints/
+tmp/
+scratch/
