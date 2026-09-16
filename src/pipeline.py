@@ -1,16 +1,19 @@
 """
 Pipeline principal de génération vidéo pour AI YouTube Studio.
-Orchestre Chatterbox V3, MuseTalk, Pexels, Whisper et le compositeur multi-plans YouTube.
+Orchestre l'IA Directrice Artistique, Chatterbox V3, MuseTalk, Pexels, Whisper
+et le compositeur de montage dynamique YouTube.
 """
 
 import logging
 import time
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from src.avatar.musetalk_service import MuseTalkService
 from src.broll.pexels_service import PexelsService
 from src.config import FINAL_DIR
+from src.director.ai_director import AIDirector, VideoScreenplay
 from src.editing.scene_compositor import YouTubeSceneCompositor
 from src.subtitles.whisper_service import WhisperService
 from src.voice.chatterbox_service import ChatterboxService
@@ -24,59 +27,63 @@ logger = logging.getLogger("AIYouTubeStudio")
 
 class YouTubeVideoPipeline:
     def __init__(self):
+        self.director = AIDirector()
         self.voice_service = ChatterboxService()
         self.avatar_service = MuseTalkService()
         self.whisper_service = WhisperService()
         self.pexels_service = PexelsService()
         self.compositor = YouTubeSceneCompositor()
 
-    def run(
+    def create_video_from_title(
         self,
-        script_text: str,
-        broll_query: str = "technology artificial intelligence",
+        video_title: str,
         avatar_image_path: Optional[Path] = None,
         custom_voice_sample: Optional[str] = None,
-        output_filename: str = "video_finale.mp4",
+        output_filename: str = "video_youtube_finale.mp4",
     ) -> Dict[str, Any]:
         """
-        Exécute la chaîne complète de génération de vidéo YouTube dynamique :
-        [1/5] Chatterbox V3 : Synthèse vocale française (ou clonée)
-        [2/5] MuseTalk : Présentateur avatar animé
-        [3/5] Pexels : Récupération des B-roll vidéo HD
-        [4/5] Whisper : Sous-titres SRT horodatés
-        [5/5] Montage Pro : Alternance Facecam + PiP bas-droite + Musique de fond + SFX
+        MÉTHODE PRINCIPALE : L'utilisateur n'a besoin de fournir QUE le titre de sa vidéo !
+        L'IA s'occupe de tout :
+        1. Écriture du script YouTube dynamique et découpage en scènes uniques
+        2. Synthèse vocale HD en français
+        3. Animation du présentateur avatar (MuseTalk)
+        4. Recherche de B-rolls spécifiques pour chaque séquence
+        5. Sous-titres horodatés
+        6. Montage pro (Facecam, PiP en bas à droite, musique de fond, bruitages Whoosh)
         """
         start_time = time.time()
         logger.info("=" * 65)
-        logger.info("DÉMARRAGE DU PIPELINE YOUTUBE DYNAMIQUE (AVATAR + PIP + SFX)")
+        logger.info(f"DÉMARRAGE DE LA CRÉATION POUR : '{video_title}'")
         logger.info("=" * 65)
-        logger.info(f"Texte du script ({len(script_text)} caractères) :\n{script_text}\n")
-
-        results = {
-            "script": script_text,
-            "broll_query": broll_query,
-            "steps": {},
-        }
 
         # -------------------------------------------------------------
-        # Étape 1 : Synthèse vocale (Chatterbox V3)
+        # Étape 1 : Direction Artistique et Scénario IA
         # -------------------------------------------------------------
-        logger.info("[1/5] 🎙️ Génération de la voix avec Chatterbox V3...")
+        logger.info("[1/6] 🎬 L'IA Directrice conçoit le scénario et la mise en scène...")
+        screenplay: VideoScreenplay = self.director.generate_screenplay(video_title)
+        full_narration = " ".join(s.narration for s in screenplay.scenes)
+        logger.info(f"[1/6] ✅ Scénario créé ({len(screenplay.scenes)} scènes, {len(full_narration.split())} mots) :")
+        for sc in screenplay.scenes:
+            logger.info(f"   - Scène {sc.scene_id} [{sc.layout}] : {sc.narration[:60]}... (B-roll: {sc.broll_query})")
+
+        # -------------------------------------------------------------
+        # Étape 2 : Synthèse Vocale (Chatterbox V3)
+        # -------------------------------------------------------------
+        logger.info("[2/6] 🎙️ Synthèse de la voix avec Chatterbox V3...")
         t0 = time.time()
         audio_path = self.voice_service.generate_voice(
-            text=script_text,
+            text=full_narration,
             output_filename="voice_track.wav",
             audio_prompt_path=custom_voice_sample,
             language_id="fr",
         )
         t_audio = time.time() - t0
-        logger.info(f"[1/5] ✅ Audio voix généré : {audio_path} ({t_audio:.2f}s)")
-        results["steps"]["voice"] = {"path": str(audio_path), "duration_sec": t_audio}
+        logger.info(f"[2/6] ✅ Audio voix généré : {audio_path} ({t_audio:.2f}s)")
 
         # -------------------------------------------------------------
-        # Étape 2 : Avatar présentateur (MuseTalk)
+        # Étape 3 : Avatar Présentateur (MuseTalk)
         # -------------------------------------------------------------
-        logger.info("[2/5] 👤 Animation de l'avatar présentateur...")
+        logger.info("[3/6] 👤 Animation de l'avatar présentateur...")
         t0 = time.time()
         avatar_video_path = self.avatar_service.generate_avatar(
             audio_path=audio_path,
@@ -84,15 +91,15 @@ class YouTubeVideoPipeline:
             output_filename="avatar_presenter.mp4",
         )
         t_avatar = time.time() - t0
-        logger.info(f"[2/5] ✅ Présentateur généré : {avatar_video_path} ({t_avatar:.2f}s)")
-        results["steps"]["avatar"] = {"path": str(avatar_video_path), "duration_sec": t_avatar}
+        logger.info(f"[3/6] ✅ Présentateur généré : {avatar_video_path} ({t_avatar:.2f}s)")
 
         # -------------------------------------------------------------
-        # Étape 3 : B-Roll (Pexels)
+        # Étape 4 : Recherche B-roll pour les scènes illustrées
         # -------------------------------------------------------------
-        logger.info(f"[3/5] 🎬 Recherche et téléchargement du B-roll Pexels ('{broll_query}')...")
+        logger.info("[4/6] 🎬 Recherche et téléchargement du B-roll Pexels le plus adapté...")
         t0 = time.time()
-        broll_path = None
+        # Prendre la requête de la première scène illustrée
+        broll_query = next((s.broll_query for s in screenplay.scenes if s.layout in ["PIP", "BROLL_FULL"]), "technology modern")
         try:
             broll_path = self.pexels_service.get_best_broll(
                 query=broll_query,
@@ -100,34 +107,28 @@ class YouTubeVideoPipeline:
                 orientation="landscape",
                 min_duration=3,
             )
-            t_broll = time.time() - t0
-            logger.info(f"[3/5] ✅ B-roll téléchargé : {broll_path} ({t_broll:.2f}s)")
-            results["steps"]["broll"] = {"path": str(broll_path), "duration_sec": t_broll}
+            logger.info(f"[4/6] ✅ B-roll téléchargé ('{broll_query}') : {broll_path}")
         except Exception as e:
-            logger.warning(f"[3/5] ⚠️ Erreur B-roll Pexels ({e}). Utilisation d'un fond de secours.")
-            # Si pas de b-roll, utiliser l'avatar comme source principale
+            logger.warning(f"[4/6] ⚠️ B-roll indisponible ({e}). Utilisation du plan studio.")
             broll_path = avatar_video_path
-            results["steps"]["broll"] = {"error": str(e)}
 
         # -------------------------------------------------------------
-        # Étape 4 : Sous-titres (Whisper)
+        # Étape 5 : Sous-titres (Whisper)
         # -------------------------------------------------------------
-        logger.info("[4/5] 📝 Génération des sous-titres SRT avec Whisper...")
+        logger.info("[5/6] 📝 Transcription et sous-titres SRT avec Whisper...")
         t0 = time.time()
         subtitles_path = self.whisper_service.transcribe_to_srt(
             audio_path=audio_path,
             output_filename="subtitles.srt",
             language="fr",
-            fallback_text=script_text,
+            fallback_text=full_narration,
         )
-        t_sub = time.time() - t0
-        logger.info(f"[4/5] ✅ Sous-titres SRT générés : {subtitles_path} ({t_sub:.2f}s)")
-        results["steps"]["subtitles"] = {"path": str(subtitles_path), "duration_sec": t_sub}
+        logger.info(f"[5/6] ✅ Sous-titres SRT générés : {subtitles_path}")
 
         # -------------------------------------------------------------
-        # Étape 5 : Montage YouTube multi-plans dynamique
+        # Étape 6 : Montage Pro YouTube Dynamique (FFmpeg)
         # -------------------------------------------------------------
-        logger.info("[5/5] 🎞️ Montage YouTube dynamique (Facecam, PiP en bas à droite, musique & transitions)...")
+        logger.info("[6/6] 🎞️ Montage YouTube dynamique (Facecam, PiP en bas à droite, musique & transitions Whoosh)...")
         t0 = time.time()
         final_video_path = self.compositor.render_dynamic_video(
             avatar_video_path=avatar_video_path,
@@ -137,34 +138,31 @@ class YouTubeVideoPipeline:
             output_filename=output_filename,
         )
         t_comp = time.time() - t0
-        logger.info(f"[5/5] ✅ Montage dynamique terminé : {final_video_path} ({t_comp:.2f}s)")
-        results["steps"]["composition"] = {"path": str(final_video_path), "duration_sec": t_comp}
+        total_time = time.time() - start_time
 
-        total_duration = time.time() - start_time
         logger.info("=" * 65)
-        logger.info(f"🎉 VIDÉO YOUTUBE FINALE EXPORTÉE : {final_video_path}")
-        logger.info(f"Taille du fichier : {final_video_path.stat().st_size / (1024*1024):.2f} Mo")
-        logger.info(f"Temps total d'exécution : {total_duration:.2f}s")
+        logger.info(f"🎉 VIDÉO YOUTUBE FINALE TERMINÉE : {final_video_path}")
+        logger.info(f"Titre : {video_title}")
+        logger.info(f"Taille : {final_video_path.stat().st_size / (1024*1024):.2f} Mo | Temps total : {total_time:.2f}s")
         logger.info("=" * 65)
 
-        results["final_video"] = str(final_video_path)
-        results["total_duration_sec"] = total_duration
-        return results
+        return {
+            "title": video_title,
+            "screenplay": [asdict(s) for s in screenplay.scenes],
+            "final_video": str(final_video_path),
+            "total_time_sec": total_time,
+        }
+
+    # Compatibilité avec l'ancienne signature
+    def run(self, script_text: str, broll_query: str = "technology", output_filename: str = "video_finale.mp4"):
+        return self.create_video_from_title(video_title=script_text, output_filename=output_filename)
 
 
 def main():
-    script = (
-        "Bonjour et bienvenue sur ma chaîne YouTube ! "
-        "Aujourd'hui, nous explorons comment l'intelligence artificielle révolutionne la production vidéo. "
-        "Regardez bien cet exemple à l'écran : le montage s'adapte automatiquement, intègre du B-roll "
-        "et synchronise chaque élément à la perfection. "
-        "N'hésitez pas à vous abonner pour ne rien manquer !"
-    )
     pipeline = YouTubeVideoPipeline()
-    pipeline.run(
-        script_text=script,
-        broll_query="artificial intelligence modern technology futuristic",
-        output_filename="video_youtube_dynamique.mp4",
+    pipeline.create_video_from_title(
+        video_title="Comment l'Intelligence Artificielle va bouleverser notre avenir en 2026",
+        output_filename="video_ia_2026.mp4",
     )
 
 
