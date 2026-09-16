@@ -44,8 +44,8 @@ def setup_kaggle_environment():
 
     # 3. Installation des paquets Python
     print("\n📦 Installation des packages IA légers & optimisés...")
-    run_command("pip install --quiet python-dotenv requests tqdm", "Installation des utilitaires de base")
-    run_command("pip install --quiet openai-whisper", "Installation de Whisper")
+    run_command("pip install --quiet --no-input python-dotenv requests tqdm", "Installation des utilitaires de base")
+    run_command("pip install --quiet --no-input openai-whisper", "Installation de Whisper")
 
     # 4. Installation de Chatterbox V3
     try:
@@ -53,10 +53,10 @@ def setup_kaggle_environment():
         print("✅ Chatterbox TTS est déjà installé.")
     except ImportError:
         print("Installation de Chatterbox TTS...")
-        success = run_command("pip install --quiet chatterbox-tts", "Installation via pip de chatterbox-tts")
+        success = run_command("pip install --quiet --no-input chatterbox-tts", "Installation via pip de chatterbox-tts")
         if not success:
             run_command(
-                "pip install --quiet git+https://github.com/resemble-ai/chatterbox.git",
+                "pip install --quiet --no-input git+https://github.com/resemble-ai/chatterbox.git",
                 "Installation depuis le dépôt GitHub de Resemble AI",
             )
 
@@ -64,7 +64,7 @@ def setup_kaggle_environment():
     musetalk_dir = "/kaggle/working/MuseTalk"
     if not os.path.exists(musetalk_dir):
         print("Clonage de MuseTalk pour l'animation d'avatar...")
-        run_command(f"git clone --depth 1 https://github.com/TMElyralab/MuseTalk.git {musetalk_dir}", "Clonage de MuseTalk")
+        run_command(f"GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/TMElyralab/MuseTalk.git {musetalk_dir}", "Clonage de MuseTalk")
 
     print("\n" + "=" * 60)
     print("🎉 ENVIRONNEMENT PRÊT POUR L'EXÉCUTION !")
